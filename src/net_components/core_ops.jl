@@ -2,6 +2,9 @@ using JuMP
 using ConditionalJuMP
 using Memento
 
+export tight_upperbound
+export tight_lowerbound
+
 """
 $(SIGNATURES)
 
@@ -83,6 +86,7 @@ function tight_bound(
         return b_0
     end
     relaxation = (tightening_algorithm == lp)
+    println("Relaxation: ", relaxation)
     # x is not constant, and thus x must have an associated model
     model = ConditionalJuMP.getmodel(x)
     @objective(model, bound_obj[bound_type], x)
@@ -234,7 +238,8 @@ end
 
 function relu(x::JuMPLinearType)::JuMP.AffExpr
     u = tight_upperbound(x, cutoff = 0)
-    l = lazy_tight_lowerbound(x, u, cutoff = 0)
+    #l = lazy_tight_lowerbound(x, u, cutoff = 0)
+    l = tight_lowerbound(x, cutoff = 0)
     relu(x, l, u)
 end
 
@@ -251,13 +256,31 @@ function relu(
         MIPVerify.LOGGER.levels[MIPVerify.LOGGER.level] > MIPVerify.LOGGER.levels["debug"]
     if !show_progress_bar
         u = tight_upperbound.(x, nta = nta, cutoff = 0)
-        l = lazy_tight_lowerbound.(x, u, nta = nta, cutoff = 0)
+        #l = lazy_tight_lowerbound.(x, u, nta = nta, cutoff = 0)
+        l = tight_lowerbound.(x, nta = nta, cutoff = 0)
         return relu.(x, l, u)
     else
         p1 = Progress(length(x), desc = "  Calculating upper bounds: ")
         u = map(x_i -> (next!(p1); tight_upperbound(x_i, nta = nta, cutoff = 0)), x)
         p2 = Progress(length(x), desc = "  Calculating lower bounds: ")
-        l = map(v -> (next!(p2); lazy_tight_lowerbound(v..., nta = nta, cutoff = 0)), zip(x, u))
+        #l = map(v -> (next!(p2); lazy_tight_lowerbound(v..., nta = nta, cutoff = 0)), zip(x, u))
+        l = map(x_i -> (next!(p2); tight_lowerbound(x_i, nta = nta, cutoff = 0)), x)
+
+        println("Upper: ", u)
+        println("Lower: ", l)
+        println("Dif: ", u - l)
+        out_file = "./test.txt"
+        open(out_file, "a") do f
+            # Writeout our results
+            # take substring to remove [] from list
+            write(f,
+                  string(l)[2:end-1], "\n",
+                  string(u)[2:end-1], "\n")
+           close(f)
+        end
+
+
+        println("Greater than 0: ", l .>= 0)
 
         reluinfo = ReLUInfo(l, u)
         Memento.info(MIPVerify.LOGGER, "$reluinfo")
