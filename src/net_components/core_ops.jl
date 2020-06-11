@@ -86,7 +86,6 @@ function tight_bound(
         return b_0
     end
     relaxation = (tightening_algorithm == lp)
-    println("Relaxation: ", relaxation)
     # x is not constant, and thus x must have an associated model
     model = ConditionalJuMP.getmodel(x)
     @objective(model, bound_obj[bound_type], x)
@@ -249,11 +248,56 @@ Expresses a rectified-linearity constraint: output is constrained to be equal to
 `max(x, 0)`.
 """
 function relu(
+    x::AbstractArray{T},
+    layerId::Int64,
+    filename::String;
+    nta::Union{TighteningAlgorithm,Nothing} = nothing,
+)::Array{JuMP.AffExpr} where {T<:JuMPLinearType}
+    show_progress_bar::Bool =
+        MIPVerify.LOGGER.levels[MIPVerify.LOGGER.level] > MIPVerify.LOGGER.levels["debug"]
+    if !show_progress_bar
+        u = tight_upperbound.(x, nta = nta, cutoff = 0)
+        #l = lazy_tight_lowerbound.(x, u, nta = nta, cutoff = 0)
+        l = tight_lowerbound.(x, nta = nta, cutoff = 0)
+        return relu.(x, l, u)
+    else
+        p1 = Progress(length(x), desc = "  Calculating upper bounds: ")
+        u = map(x_i -> (next!(p1); tight_upperbound(x_i, nta = nta, cutoff = 0)), x)
+        p2 = Progress(length(x), desc = "  Calculating lower bounds: ")
+        #l = map(v -> (next!(p2); lazy_tight_lowerbound(v..., nta = nta, cutoff = 0)), zip(x, u))
+        l = map(x_i -> (next!(p2); tight_lowerbound(x_i, nta = nta, cutoff = 0)), x)
+
+        println("Upper: ", u)
+        println("Lower: ", l)
+        println("Dif: ", u - l)
+        println("layerId: ", (layerId - 1) / 2)
+        out_file = filename
+        open(out_file, "a") do f
+            # Writeout our results
+            # take substring to remove [] from list
+            for i = 1:length(l)
+                write(f, "ws_", string(convert(Int64, (layerId-1)/2)), "_", string(i), " >= ", string(l[i]), "\n")
+                write(f, "ws_", string(convert(Int64, (layerId-1)/2)), "_", string(i), " <= ", string(u[i]), "\n")
+            end
+           close(f)
+        end
+
+        reluinfo = ReLUInfo(l, u)
+        Memento.info(MIPVerify.LOGGER, "$reluinfo")
+
+        p3 = Progress(length(x), desc = "  Imposing relu constraint: ")
+        return x_r = map(v -> (next!(p3); relu(v...)), zip(x, l, u))
+    end
+end
+
+function relu(
     x::AbstractArray{T};
     nta::Union{TighteningAlgorithm,Nothing} = nothing,
 )::Array{JuMP.AffExpr} where {T<:JuMPLinearType}
     show_progress_bar::Bool =
         MIPVerify.LOGGER.levels[MIPVerify.LOGGER.level] > MIPVerify.LOGGER.levels["debug"]
+    println("Relu!")
+    throw(DivideError())
     if !show_progress_bar
         u = tight_upperbound.(x, nta = nta, cutoff = 0)
         #l = lazy_tight_lowerbound.(x, u, nta = nta, cutoff = 0)
@@ -330,6 +374,8 @@ function masked_relu(
     nta::Union{TighteningAlgorithm,Nothing} = nothing,
 )::Array{JuMP.AffExpr}
     @assert(size(x) == size(m))
+
+    println("Masked Relu!")
     s = size(m)
     # We add the constraints corresponding to the active ReLUs to the model
     zero_idx = Iterators.filter(i -> m[i] == 0, CartesianIndices(s)) |> collect

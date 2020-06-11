@@ -23,9 +23,9 @@ An array of `Layers` is interpreted as that array of layer being applied
 to the input sequentially, starting from the leftmost layer. (In functional programming
 terms, this can be thought of as a sort of `fold`).
 """
-chain(x::Array{<:JuMPReal}, ps::Array{<:Layer,1}) = length(ps) == 0 ? x : chain(ps[1](x), ps[2:end])
+chain(x::Array{<:JuMPReal}, ps::Array{<:Layer,1}, layerId::Int64, filename::String) = length(ps) == 0 ? x : chain(ps[1](x, layerId, filename), ps[2:end], layerId + 1, filename)
 
-(ps::Array{<:Layer,1})(x::Array{<:JuMPReal}) = chain(x, ps)
+(ps::Array{<:Layer,1})(x::Array{<:JuMPReal}) = chain(x, ps, 1, "bounds.txt")
 
 function check_size(input::AbstractArray, expected_size::NTuple{N,Int})::Nothing where {N}
     input_size = size(input)

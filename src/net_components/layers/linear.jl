@@ -85,9 +85,9 @@ function matmul(x::Array{T,1}, params::Linear{U,V}) where {T<:JuMPLinearType,U<:
     return output
 end
 
-(p::Linear)(x::Array{<:JuMPReal}) =
+(p::Linear)(x::Array{<:JuMPReal}, layerId::Int64, filename::String) =
     "Linear() layers work only on one-dimensional input. You likely forgot to add a Flatten() layer before your first linear layer." |>
     ArgumentError |>
     throw
 
-(p::Linear)(x::Array{<:JuMPReal,1}) = matmul(x, p)
+(p::Linear)(x::Array{<:JuMPReal,1}, layerId::Int64, filename::String) = matmul(x, p)

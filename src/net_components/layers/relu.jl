@@ -20,6 +20,6 @@ function Base.show(io::IO, p::ReLU)
     print(io, "ReLU()")
 end
 
-(p::ReLU)(x::Array{<:Real}) = relu(x)
-(p::ReLU)(x::Array{<:JuMPLinearType}) =
-    (Memento.info(MIPVerify.LOGGER, "Applying $p ..."); relu(x, nta = p.tightening_algorithm))
+(p::ReLU)(x::Array{<:Real}, layerId::Int64, filename::String) = relu(x)
+(p::ReLU)(x::Array{<:JuMPLinearType}, layerId::Int64, filename::String) =
+    (Memento.info(MIPVerify.LOGGER, "Applying $p ..."); relu(x, layerId, filename, nta = p.tightening_algorithm))
