@@ -22,4 +22,4 @@ function Base.show(io::IO, p::Sequential)
     end
 end
 
-(p::Sequential)(x::Array{<:JuMPReal}) = x |> p.layers
+(p::Sequential)(x::Array{<:JuMPReal}; summary_file_name::String="") = p.layers(x, summary_file_name=summary_file_name)

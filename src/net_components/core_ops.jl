@@ -271,15 +271,18 @@ function relu(
         println("Lower: ", l)
         println("Dif: ", u - l)
         println("layerId: ", (layerId - 1) / 2)
-        out_file = filename
-        open(out_file, "a") do f
-            # Writeout our results
-            # take substring to remove [] from list
-            for i = 1:length(l)
-                write(f, "ws_", string(convert(Int64, (layerId-1)/2)), "_", string(i), " >= ", string(l[i]), "\n")
-                write(f, "ws_", string(convert(Int64, (layerId-1)/2)), "_", string(i), " <= ", string(u[i]), "\n")
+
+        # Only write bounds to file if given a non-empty filename
+        if (filename != "")
+            open(filename, "a") do f
+                # Writeout our results
+                # take substring to remove [] from list
+                for i = 1:length(l)
+                    write(f, "ws_", string(convert(Int64, (layerId)/2)), "_", string(i-1), " >= ", string(l[i]), "\n")
+                    write(f, "ws_", string(convert(Int64, (layerId)/2)), "_", string(i-1), " <= ", string(u[i]), "\n")
+                end
+               close(f)
             end
-           close(f)
         end
 
         reluinfo = ReLUInfo(l, u)

@@ -25,7 +25,7 @@ terms, this can be thought of as a sort of `fold`).
 """
 chain(x::Array{<:JuMPReal}, ps::Array{<:Layer,1}, layerId::Int64, filename::String) = length(ps) == 0 ? x : chain(ps[1](x, layerId, filename), ps[2:end], layerId + 1, filename)
 
-(ps::Array{<:Layer,1})(x::Array{<:JuMPReal}) = chain(x, ps, 1, "bounds.txt")
+(ps::Array{<:Layer,1})(x::Array{<:JuMPReal}; summary_file_name::String="") = chain(x, ps, 1, summary_file_name)
 
 function check_size(input::AbstractArray, expected_size::NTuple{N,Int})::Nothing where {N}
     input_size = size(input)
