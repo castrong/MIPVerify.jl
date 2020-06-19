@@ -278,8 +278,8 @@ function relu(
                 # Writeout our results
                 # take substring to remove [] from list
                 for i = 1:length(l)
-                    write(f, "ws_", string(convert(Int64, (layerId)/2)), "_", string(i-1), " >= ", string(l[i]), "\n")
-                    write(f, "ws_", string(convert(Int64, (layerId)/2)), "_", string(i-1), " <= ", string(u[i]), "\n")
+                    write(f, "h_", string(convert(Int64, (layerId)/2)), "_", string(i-1), " >= ", string(l[i]), "\n")
+                    write(f, "h_", string(convert(Int64, (layerId)/2)), "_", string(i-1), " <= ", string(u[i]), "\n")
                 end
                close(f)
             end
